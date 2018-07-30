@@ -50,7 +50,7 @@ class ResourceTypeHelperSuite extends SparkFunSuite with Matchers with BeforeAnd
     thrown.getMessage should equal (getExpectedUnmatchedErrorMessage("**@#"))
   }
 
-  test("resource type just unit defined") {
+  test("resource type with just unit defined should not be allowed") {
     assume(ResourceTypeHelper.isYarnResourceTypesAvailable())
     TestYarnResourceTypeHelper.initializeResourceTypes(List())
 

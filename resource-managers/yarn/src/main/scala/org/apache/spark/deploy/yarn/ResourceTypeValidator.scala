@@ -41,15 +41,23 @@ private[spark] object ResourceType extends Enumeration {
   val cores, memory = Value
 }
 
+private case class ResourceConfigProperties(
+  val processType: ProcessType,
+  val runMode: Option[RunMode],
+  val resourceType: ResourceType)
+
+
+
+// TODO: Review this weirdo object.
 private object ResourceTypeValidator {
   private val ERROR_PREFIX: String = "Error: "
   private val POSSIBLE_RESOURCE_DEFINITIONS = Seq[ResourceConfigProperties](
-    new ResourceConfigProperties(am, client, memory),
-    new ResourceConfigProperties(am, client, cores),
-    new ResourceConfigProperties(driver, cluster, memory),
-    new ResourceConfigProperties(driver, cluster, cores),
-    new ResourceConfigProperties(processType = executor, resourceType = memory),
-    new ResourceConfigProperties(processType = executor, resourceType = cores))
+    ResourceConfigProperties(am, Some(client), memory),
+    ResourceConfigProperties(am, Some(client), cores),
+    ResourceConfigProperties(driver, Some(cluster), memory),
+    ResourceConfigProperties(driver, Some(cluster), cores),
+    ResourceConfigProperties(executor, None, memory),
+    ResourceConfigProperties(executor, None, cores))
 
   /**
    * Validates sparkConf and throws a SparkException if a standard resource (memory or cores)
@@ -65,9 +73,9 @@ private object ResourceTypeValidator {
    * - spark.yarn.executor.resource.cores=2<br>
    * Then the following two error messages will be printed:<br>
    * - "memory cannot be requested with config spark.yarn.driver.resource.memory,
-   * please use config spark.driver.memory instead!<br>
+   * please use config spark.driver.memory instead!"<br>
    * - "cores cannot be requested with config spark.yarn.executor.resource.cores,
-   * please use config spark.executor.cores instead!<br>
+   * please use config spark.executor.cores instead!"<br>
    *
    * @param sparkConf
    */
@@ -79,14 +87,9 @@ private object ResourceTypeValidator {
       val (standardResourceConfigKey: String, customResourceConfigKey: String) =
         getResourceConfigKeys(rcp)
 
-      val errorMessage =
-        if (customResources.contains(customResourceConfigKey)) {
-          s"${rcp.resourceType} cannot be requested with config $customResourceConfigKey, " +
-              s"please use config $standardResourceConfigKey instead!"
-        } else {
-          ""
-        }
-      if (errorMessage.nonEmpty) {
+      if (customResources.contains(customResourceConfigKey)) {
+        val errorMessage = s"${rcp.resourceType} cannot be requested with config $customResourceConfigKey, " +
+        s"please use config $standardResourceConfigKey instead!"
         printErrorMessageToBuffer(sb, errorMessage)
       }
     }
@@ -149,11 +152,6 @@ private object ResourceTypeValidator {
   private[spark] def printErrorMessageToBuffer(sb: StringBuilder, str: String): Unit = {
     sb.append(s"$ERROR_PREFIX$str\n")
   }
-
-  private class ResourceConfigProperties(
-      val processType: ProcessType,
-      val runMode: RunMode = null,
-      val resourceType: ResourceType)
 
   /**
    * Stores all requested custom resources.

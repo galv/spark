@@ -142,7 +142,8 @@ private[yarn] class YarnAllocator(
   private val executorResourceTypes: collection.immutable.Map[String, String] =
     sparkConf.getAllWithPrefix(config.YARN_EXECUTOR_RESOURCE_TYPES_PREFIX).toMap
 
-  // Resource capability requested for each executors
+  // Resource capability requested for each executor
+  // What in the world is the Resouce Type???
   private[yarn] val resource: Resource = createResourceCapability
 
   private val launcherPool = ThreadUtils.newDaemonCachedThreadPool(
@@ -168,6 +169,7 @@ private[yarn] class YarnAllocator(
     val defaultResource = Resource.newInstance(executorMemory + memoryOverhead, executorCores)
     val resource = ResourceTypeHelper
       .setResourceInfoFromResourceTypes(executorResourceTypes, defaultResource)
+    // Will this print out the custom resources???
     logDebug("Created resource capability: %s".format(resource.toString))
     resource
   }
@@ -320,10 +322,12 @@ private[yarn] class YarnAllocator(
     if (missing > 0) {
       var requestContainerMessage = s"Will request $missing executor container(s), each with " +
           s"${resource.getVirtualCores} core(s) and " +
-          s"${resource.getMemory} MB memory (including $memoryOverhead MB of overhead) "
+          s"${resource.getMemory} MB memory (including $memoryOverhead MB of overhead)"
       if (ResourceTypeHelper.isYarnResourceTypesAvailable()) {
-        requestContainerMessage ++= s"and with custom resources:" +
-            ResourceTypeHelper.getCustomResourcesAsStrings(resource)
+        // TODO: Strip the spark.yarn.executor.resource. blahblahblah
+        // prefix from each key k.
+        requestContainerMessage ++= " and with custom resources:" +
+        executorResourceTypes.map{case (k, v) => k + "=" + v}.mkString("\n")
       }
       logInfo(requestContainerMessage)
 
@@ -493,21 +497,15 @@ private[yarn] class YarnAllocator(
     val matchingResource = Resource.newInstance(allocatedContainer.getResource.getMemory,
       resource.getVirtualCores)
 
-    if (ResourceTypeHelper.isYarnResourceTypesAvailable()) {
-      ResourceTypeHelper
-          .setResourceInfoFromResourceTypes(executorResourceTypes, matchingResource)
-    }
+    ResourceTypeHelper
+      .setResourceInfoFromResourceTypes(executorResourceTypes, matchingResource)
 
-    logDebug(s"Calling amClient.getMatchingRequests with parameters: " +
-        s"priority: ${allocatedContainer.getPriority}, " +
-        s"location: $location, resource: $matchingResource")
-    val matchingRequests = amClient.getMatchingRequests(allocatedContainer.getPriority, location,
-      matchingResource)
+    val matchingRequests = amClient.getMatchingRequests(
+      allocatedContainer.getPriority, location, matchingResource)
 
     // Match the allocation to a request
     if (!matchingRequests.isEmpty) {
       val containerRequest = matchingRequests.get(0).iterator.next
-      logDebug(s"Removing container request via AM client: $containerRequest")
       amClient.removeContainerRequest(containerRequest)
       containersToUse += allocatedContainer
     } else {

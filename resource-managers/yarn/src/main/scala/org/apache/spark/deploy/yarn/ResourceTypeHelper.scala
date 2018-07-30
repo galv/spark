@@ -36,31 +36,30 @@ private object ResourceTypeHelper extends Logging {
 
   def setResourceInfoFromResourceTypes(
       resourceTypes: Map[String, String],
-      resource: Resource): Resource = {
+      resource: Resource) = {
     require(resource != null, "Resource parameter should not be null!")
 
     if (!ResourceTypeHelper.isYarnResourceTypesAvailable()) {
-      return resource
+      return
     }
+
+    val resInfoClass = Utils.classForName(
+      "org.apache.hadoop.yarn.api.records.ResourceInformation")
+    val setResourceInformationMethod =
+      resource.getClass.getMethod("setResourceInformation", classOf[String],
+        resInfoClass)
 
     logDebug(s"Custom resource types: $resourceTypes")
     resourceTypes.foreach { case (name, rawAmount) =>
       try {
         val AMOUNT_AND_UNIT_REGEX(amountPart, unitPart) = rawAmount
         val (amount, unit) = (amountPart.toLong, unitPart match {
-          case "m" => "M"
+          // Were it up to me, I'd remove this completely.
           case "g" => "G"
           case "t" => "T"
-          case "p" => "P"
           case _ => unitPart
         })
         logDebug(s"Registering resource with name: $name, amount: $amount, unit: $unit")
-
-        val resInfoClass = Utils.classForName(
-          "org.apache.hadoop.yarn.api.records.ResourceInformation")
-        val setResourceInformationMethod =
-          resource.getClass.getMethod("setResourceInformation", classOf[String],
-            resInfoClass)
 
         val resourceInformation =
           createResourceInformation(name, amount, unit, resInfoClass)
@@ -77,42 +76,6 @@ private object ResourceTypeHelper extends Logging {
           }
       }
     }
-    resource
-  }
-
-  def getCustomResourcesAsStrings(resource: Resource): String = {
-    if (resource == null) {
-      throw new IllegalArgumentException("Resource parameter should not be null!")
-    }
-
-    if (!ResourceTypeHelper.isYarnResourceTypesAvailable()) {
-      return ""
-    }
-
-    var res: String = ""
-    try {
-      val resUtilsClass = Utils.classForName(
-        "org.apache.hadoop.yarn.util.resource.ResourceUtils")
-      val getNumberOfResourceTypesMethod = resUtilsClass.getMethod("getNumberOfKnownResourceTypes")
-      val numberOfResourceTypes: Int = getNumberOfResourceTypesMethod.invoke(null).asInstanceOf[Int]
-      val resourceClass = Utils.classForName(
-        "org.apache.hadoop.yarn.api.records.Resource")
-
-      // skip memory and vcores (index 0 and 1)
-      for (i <- 2 until numberOfResourceTypes) {
-        val getResourceInfoMethod = resourceClass.getMethod("getResourceInformation", JInteger.TYPE)
-        res ++= getResourceInfoMethod.invoke(resource, i.asInstanceOf[JInteger]).toString()
-        res ++= ", "
-      }
-    } catch {
-      case e: InvocationTargetException =>
-        if (e.getCause != null) {
-          throw e.getCause
-        } else {
-          throw e
-        }
-    }
-    res
   }
 
   private def createResourceInformation(

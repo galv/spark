@@ -98,6 +98,7 @@ public class DataTypes {
    * Creates an ArrayType by specifying the data type of elements ({@code elementType}).
    * The field of {@code containsNull} is set to {@code true}.
    */
+    // Where is ArrayType defined???
   public static ArrayType createArrayType(DataType elementType) {
     if (elementType == null) {
       throw new IllegalArgumentException("elementType should not be null.");

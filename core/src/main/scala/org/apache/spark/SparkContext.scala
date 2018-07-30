@@ -1592,6 +1592,7 @@ class SparkContext(config: SparkConf) extends Logging {
    *                     shouldn't kill any running executor to reach this number, but,
    *                     if all existing executors were to die, this is the number of executors
    *                     we'd want to be allocated.
+   * Seems redundant with hostToLocalTaskCount
    * @param localityAwareTasks The number of tasks in all active stages that have a locality
    *                           preferences. This includes running, pending, and completed tasks.
    * @param hostToLocalTaskCount A map of hosts to the number of tasks from all active stages
@@ -1599,6 +1600,7 @@ class SparkContext(config: SparkConf) extends Logging {
    *                             This includes running, pending, and completed tasks.
    * @return whether the request is acknowledged by the cluster manager.
    */
+  // Call this to make sure GPUs are allocated together!
   @DeveloperApi
   def requestTotalExecutors(
       numExecutors: Int,

@@ -127,10 +127,12 @@ To use a custom metrics.properties for the application master and executors, upd
   <td>
     Amount of resource to use for the YARN Application Master in client mode.
     In cluster mode, use <code>spark.yarn.driver.resource.&lt;resource-type&gt;</code> instead.
-    Please note that this feature can be used only with Yarn 3.0+
+    Please note that this feature can be used only with YARN 3.0+
     <p/>
     Example: 
     To request GPU resources from YARN, use: <code>spark.yarn.am.resource.yarn.io/gpu</code>
+    <p/>
+    See the [YARN resource type page](http://hadoop.apache.org/docs/r3.0.3/hadoop-yarn/hadoop-yarn-site/ResourceModel.html) for more information.
   </td>
 </tr>
 <tr>
@@ -138,10 +140,12 @@ To use a custom metrics.properties for the application master and executors, upd
   <td><code>(none)</code></td>
   <td>
     Amount of resource to use for the YARN Application Master in cluster mode.
-    Please note that this feature can be used only with Yarn 3.0+
+    Please note that this feature can be used only with YARN 3.0+
     <p/>
     Example: 
     To request GPU resources from YARN, use: <code>spark.yarn.driver.resource.yarn.io/gpu</code>
+    <p/>
+    See the [YARN resource type page](http://hadoop.apache.org/docs/r3.0.3/hadoop-yarn/hadoop-yarn-site/ResourceModel.html) for more information.
   </td>
 </tr>
 <tr>
@@ -149,10 +153,12 @@ To use a custom metrics.properties for the application master and executors, upd
   <td><code>(none)</code></td>
  <td>
      Amount of resource to use per executor process.
-     Please note that this feature can be used only with Yarn 3.0+
+     Please note that this feature can be used only with YARN 3.0+
      <p/>
      Example: 
      To request GPU resources from YARN, use: <code>spark.yarn.executor.resource.yarn.io/gpu</code>
+     <p/>
+     See the [YARN resource type page](http://hadoop.apache.org/docs/r3.0.3/hadoop-yarn/hadoop-yarn-site/ResourceModel.html) for more information.
  </td>
 </tr>
 <tr>
